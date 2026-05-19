@@ -18,33 +18,37 @@
   .view-toggle { display:flex; border:1.5px solid var(--text); border-radius:100px; overflow:hidden; }
   .view-btn { padding:6px 16px; font-size:12px; font-family:'DM Mono',monospace; font-weight:500; border:none; background:none; cursor:pointer; color:var(--muted); transition:all 0.15s; }
   .view-btn.active { background:var(--text); color:white; }
-  .week-nav { display:flex; align-items:center; gap:8px; }
   .nav-btn { width:32px; height:32px; border:1.5px solid var(--text); background:none; border-radius:50%; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
   .nav-btn:hover { background:var(--text); color:white; }
-  .today-btn { padding:6px 14px; font-size:12px; font-family:'DM Mono',monospace; font-weight:500; border:1.5px solid var(--text); background:none; border-radius:100px; cursor:pointer; color:var(--text); transition:all 0.15s; }
+  .week-nav { display:flex; align-items:center; gap:8px; }
+  .today-btn,.sync-btn { padding:6px 14px; font-size:12px; font-family:'DM Mono',monospace; font-weight:500; border:1.5px solid var(--text); background:none; border-radius:100px; cursor:pointer; color:var(--text); transition:all 0.15s; }
   .today-btn:hover { background:var(--text); color:white; }
+  .sync-btn { border-color:var(--info); color:var(--info); }
+  .sync-btn:hover { background:var(--info); color:white; }
+  .sync-btn:disabled { opacity:0.5; cursor:not-allowed; }
   .period-label { font-family:'DM Mono',monospace; font-size:13px; min-width:150px; text-align:center; font-weight:500; }
   .stats { display:flex; gap:8px; }
   .stat-pill { background:var(--surface); border:1px solid var(--border); border-radius:100px; padding:5px 14px; font-size:12px; color:var(--muted); font-family:'DM Mono',monospace; }
   .stat-pill strong { color:var(--text); font-weight:500; }
-  .sync-btn { padding:6px 14px; font-size:12px; font-family:'DM Mono',monospace; font-weight:500; border:1.5px solid var(--info); background:none; border-radius:100px; cursor:pointer; color:var(--info); transition:all 0.15s; }
-  .sync-btn:hover { background:var(--info); color:white; }
-  .sync-btn:disabled { opacity:0.5; cursor:not-allowed; }
   .status-bar { font-size:12px; font-family:'DM Mono',monospace; color:var(--muted); margin-bottom:1rem; min-height:20px; }
   .status-bar.error { color:#DC2626; }
   .status-bar.success { color:var(--info); }
-  /* 주간 */
+  .api-setup { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.5rem; margin-bottom:1.5rem; }
+  .api-setup h3 { font-size:14px; font-weight:700; margin-bottom:0.5rem; }
+  .api-setup p { font-size:12px; color:var(--muted); margin-bottom:1rem; }
+  .api-row { display:flex; gap:8px; }
+  .api-row input { flex:1; padding:8px 12px; font-size:13px; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); font-family:'DM Mono',monospace; outline:none; }
+  .api-row input:focus { border-color:var(--text); }
+  .api-save-btn { padding:8px 16px; font-size:13px; cursor:pointer; border-radius:10px; font-weight:500; background:var(--text); border:none; color:white; }
   .weekly-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
-  .day-col { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; min-height:360px; display:flex; flex-direction:column; transition:border-color 0.15s; }
-  .day-col:hover { border-color:#C8C6BE; }
+  .day-col { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; min-height:360px; display:flex; flex-direction:column; }
   .day-col.is-today { border-color:var(--text); border-width:1.5px; }
   .day-header { padding:14px 10px 12px; text-align:center; border-bottom:1px solid var(--border); }
   .day-name { font-size:10px; font-weight:500; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; font-family:'DM Mono',monospace; }
   .day-num { width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; margin:0 auto; font-size:15px; font-weight:500; }
   .day-num.today { background:var(--text); color:white; }
   .tasks { padding:8px 7px; flex:1; display:flex; flex-direction:column; gap:5px; }
-  .task { border-radius:8px; padding:6px 8px; font-size:11px; cursor:pointer; display:flex; align-items:flex-start; gap:5px; transition:opacity 0.15s,transform 0.1s; line-height:1.4; user-select:none; }
-  .task:hover { transform:scale(0.98); }
+  .task { border-radius:8px; padding:6px 8px; font-size:11px; cursor:pointer; display:flex; align-items:flex-start; gap:5px; line-height:1.4; user-select:none; transition:opacity 0.15s; }
   .task.done { opacity:0.4; }
   .task.done .task-text { text-decoration:line-through; }
   .task-dot { width:5px; height:5px; border-radius:50%; margin-top:4px; flex-shrink:0; }
@@ -58,11 +62,9 @@
   .task-info .task-badge { background:#DCFCE7; color:var(--info-text); }
   .add-btn { width:100%; border:none; background:none; color:var(--border); font-size:20px; padding:8px; cursor:pointer; border-top:1px solid var(--border); transition:all 0.15s; margin-top:auto; }
   .add-btn:hover { background:var(--bg); color:var(--muted); }
-  /* 월간 */
   .monthly-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
   .month-day-header { text-align:center; padding:8px 0; font-size:11px; font-family:'DM Mono',monospace; color:var(--muted); font-weight:500; }
-  .month-cell { background:var(--surface); border:1px solid var(--border); min-height:110px; padding:8px; border-radius:10px; cursor:pointer; transition:border-color 0.15s; }
-  .month-cell:hover { border-color:#C8C6BE; }
+  .month-cell { background:var(--surface); border:1px solid var(--border); min-height:110px; padding:8px; border-radius:10px; cursor:pointer; }
   .month-cell.is-today { border-color:var(--text); border-width:1.5px; }
   .month-cell.other-month { opacity:0.35; }
   .month-date { font-size:12px; font-weight:500; margin-bottom:5px; }
@@ -73,27 +75,16 @@
   .month-task.done { opacity:0.4; text-decoration:line-through; }
   .more-tasks { font-size:10px; color:var(--muted); margin-top:2px; }
   .hidden { display:none; }
-  /* 모달 */
   .modal-bg { display:none; position:fixed; inset:0; background:rgba(26,25,23,0.4); z-index:100; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
   .modal-bg.open { display:flex; }
   .modal { background:var(--surface); border-radius:20px; border:1.5px solid var(--text); padding:1.5rem; width:300px; box-shadow:4px 4px 0 var(--text); }
   .modal h3 { font-size:15px; font-weight:700; margin-bottom:6px; }
   .modal-day { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); margin-bottom:1rem; }
   .modal select,.modal input[type="text"] { width:100%; margin-bottom:10px; padding:9px 12px; font-size:13px; font-family:'Noto Sans KR',sans-serif; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); outline:none; }
-  .modal select:focus,.modal input:focus { border-color:var(--text); }
   .modal-btns { display:flex; gap:8px; margin-top:4px; }
   .modal-btns button { flex:1; padding:9px; font-size:13px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; border-radius:10px; font-weight:500; transition:all 0.15s; }
   .btn-cancel { background:none; border:1px solid var(--border); color:var(--muted); }
-  .btn-cancel:hover { border-color:var(--text); color:var(--text); }
   .btn-add { background:var(--text); border:1.5px solid var(--text); color:white; }
-  .btn-add:hover { background:#333; }
-  /* API 설정 */
-  .api-setup { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.5rem; margin-bottom:1.5rem; }
-  .api-setup h3 { font-size:14px; font-weight:700; margin-bottom:1rem; }
-  .api-row { display:flex; gap:8px; }
-  .api-row input { flex:1; padding:8px 12px; font-size:13px; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); font-family:'DM Mono',monospace; outline:none; }
-  .api-row input:focus { border-color:var(--text); }
-  .api-save-btn { padding:8px 16px; font-size:13px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; border-radius:10px; font-weight:500; background:var(--text); border:none; color:white; }
   .legend { display:flex; gap:16px; margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border); }
   .legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); font-family:'DM Mono',monospace; }
   .legend-dot { width:8px; height:8px; border-radius:50%; }
@@ -127,6 +118,7 @@
 
   <div class="api-setup" id="api-setup">
     <h3>🔑 노션 API 키 설정</h3>
+    <p>처음 한 번만 입력하면 저장돼요</p>
     <div class="api-row">
       <input type="password" id="api-key-input" placeholder="노션 API 키 입력 (secret_...)" />
       <button class="api-save-btn" onclick="saveApiKey()">저장</button>
@@ -168,7 +160,6 @@
 
 <script>
 const NOTION_DB_ID = 'f66f3af55bd24a1781c8d67d800200d0';
-const PROXY = 'https://api.allorigins.win/raw?url=';
 const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
 const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
@@ -195,17 +186,18 @@ function setStatus(msg, type='') {
 }
 
 async function notionRequest(method, path, body) {
-  const url = `https://api.notion.com/v1${path}`;
-  const proxyUrl = PROXY + encodeURIComponent(url);
-  const res = await fetch(proxyUrl, {
+  const PROXY = 'https://corsproxy.io/?url=';
+  const url = PROXY + encodeURIComponent('https://api.notion.com/v1' + path);
+  const res = await fetch(url, {
     method,
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': 'Bearer ' + apiKey,
       'Notion-Version': '2022-06-28',
       'Content-Type': 'application/json'
     },
     body: body ? JSON.stringify(body) : undefined
   });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 
@@ -215,24 +207,21 @@ async function syncFromNotion() {
   btn.disabled = true;
   setStatus('노션에서 데이터 불러오는 중...');
   try {
-    const data = await notionRequest('POST', `/databases/${NOTION_DB_ID}/query`, {
+    const data = await notionRequest('POST', '/databases/' + NOTION_DB_ID + '/query', {
       sorts: [{ property: '날짜', direction: 'ascending' }]
     });
-    if (!data.results) throw new Error('데이터를 불러올 수 없어요');
     tasks = {};
     pageIds = {};
-    data.results.forEach(page => {
+    (data.results || []).forEach(page => {
       const dateVal = page.properties['날짜']?.date?.start;
       const topic = page.properties['토픽']?.title?.[0]?.plain_text;
       const cert = page.properties['자격증']?.select?.name;
-      const done = page.properties['완료']?.checkbox;
+      const done = page.properties['완료']?.checkbox || false;
       if (!dateVal || !topic) return;
       const certKey = cert === 'CCNA' ? 'ccna' : 'info';
-      if (!tasks[dateVal]) tasks[dateVal] = [];
-      const idx = tasks[dateVal].length;
-      tasks[dateVal].push({ topic, cert: certKey, done: done || false });
-      if (!pageIds[dateVal]) pageIds[dateVal] = [];
-      pageIds[dateVal][idx] = page.id;
+      if (!tasks[dateVal]) { tasks[dateVal] = []; pageIds[dateVal] = []; }
+      tasks[dateVal].push({ topic, cert: certKey, done });
+      pageIds[dateVal].push(page.id);
     });
     localStorage.setItem('weekly_planner_tasks', JSON.stringify(tasks));
     localStorage.setItem('weekly_planner_ids', JSON.stringify(pageIds));
@@ -258,16 +247,13 @@ async function addToNotion(key, topic, cert) {
       }
     });
     return data.id;
-  } catch(e) {
-    console.error(e);
-    return null;
-  }
+  } catch(e) { console.error(e); return null; }
 }
 
 async function updateNotion(pageId, done) {
   if (!apiKey || !pageId) return;
   try {
-    await notionRequest('PATCH', `/pages/${pageId}`, {
+    await notionRequest('PATCH', '/pages/' + pageId, {
       properties: { '완료': { checkbox: done } }
     });
   } catch(e) { console.error(e); }
@@ -287,7 +273,6 @@ function switchView(view) {
 }
 
 function goToday() { baseDate=new Date(); render(); }
-
 function changePeriod(dir) {
   if(currentView==='week') baseDate.setDate(baseDate.getDate()+dir*7);
   else baseDate.setMonth(baseDate.getMonth()+dir);
@@ -320,13 +305,13 @@ function renderWeek() {
     const isToday=key===today;
     const col=document.createElement('div');
     col.className='day-col'+(isToday?' is-today':'');
-    col.innerHTML=`<div class="day-header"><div class="day-name">${DAYS[day.getDay()]}</div><div class="day-num${isToday?' today':''}">${day.getDate()}</div></div><div class="tasks" id="tasks-${key}"></div><button class="add-btn" onclick="openModal('${key}')">+</button>`;
+    col.innerHTML='<div class="day-header"><div class="day-name">'+DAYS[day.getDay()]+'</div><div class="day-num'+(isToday?' today':'')+'">'+day.getDate()+'</div></div><div class="tasks" id="tasks-'+key+'"></div><button class="add-btn" onclick="openModal(\''+key+'\')">+</button>';
     grid.appendChild(col);
-    const tasksEl=col.querySelector(`#tasks-${key}`);
+    const tasksEl=col.querySelector('#tasks-'+key);
     (tasks[key]||[]).forEach((t,idx)=>{
       const el=document.createElement('div');
-      el.className=`task task-${t.cert}${t.done?' done':''}`;
-      el.innerHTML=`<div class="task-dot"></div><div class="task-text">${t.topic}</div><div class="task-badge">${t.cert==='ccna'?'CC':'정처'}</div>`;
+      el.className='task task-'+t.cert+(t.done?' done':'');
+      el.innerHTML='<div class="task-dot"></div><div class="task-text">'+t.topic+'</div><div class="task-badge">'+(t.cert==='ccna'?'CC':'정처')+'</div>';
       el.onclick=()=>toggleTask(key,idx);
       tasksEl.appendChild(el);
     });
@@ -336,7 +321,7 @@ function renderWeek() {
 function renderMonth() {
   const year=baseDate.getFullYear(),month=baseDate.getMonth();
   document.getElementById('period-label').textContent=year+'년 '+MONTHS[month];
-  document.getElementById('monthly-header').innerHTML=DAYS.map(d=>`<div class="month-day-header">${d}</div>`).join('');
+  document.getElementById('monthly-header').innerHTML=DAYS.map(d=>'<div class="month-day-header">'+d+'</div>').join('');
   const grid=document.getElementById('monthly-grid');
   grid.innerHTML='';
   const firstDay=new Date(year,month,1);
@@ -355,9 +340,9 @@ function renderMonth() {
     const cell=document.createElement('div');
     cell.className='month-cell'+(isToday?' is-today':'')+(!isCur?' other-month':'');
     cell.onclick=()=>openModal(key);
-    const dateEl=isToday?`<div class="month-date"><div class="today-circle">${d.getDate()}</div></div>`:`<div class="month-date">${d.getDate()}</div>`;
-    const taskEls=dayTasks.slice(0,3).map((t,idx)=>`<div class="month-task task-${t.cert}${t.done?' done':''}" onclick="event.stopPropagation();toggleTask('${key}',${idx})">${t.topic}</div>`).join('');
-    const more=dayTasks.length>3?`<div class="more-tasks">+${dayTasks.length-3}개 더</div>`:'';
+    const dateEl=isToday?'<div class="month-date"><div class="today-circle">'+d.getDate()+'</div></div>':'<div class="month-date">'+d.getDate()+'</div>';
+    const taskEls=dayTasks.slice(0,3).map((t,idx)=>'<div class="month-task task-'+t.cert+(t.done?' done':'')+'" onclick="event.stopPropagation();toggleTask(\''+key+'\','+idx+')">'+t.topic+'</div>').join('');
+    const more=dayTasks.length>3?'<div class="more-tasks">+'+(dayTasks.length-3)+'개 더</div>':'';
     cell.innerHTML=dateEl+taskEls+more;
     grid.appendChild(cell);
   });
@@ -380,8 +365,7 @@ async function addTask() {
   if(!tasks[selectedDay]) tasks[selectedDay]=[];
   tasks[selectedDay].push({topic,cert,done:false});
   localStorage.setItem('weekly_planner_tasks',JSON.stringify(tasks));
-  closeModal();
-  render();
+  closeModal(); render();
   setStatus('노션에 저장 중...');
   const pageId=await addToNotion(selectedDay,topic,cert);
   if(pageId){
@@ -390,7 +374,7 @@ async function addTask() {
     localStorage.setItem('weekly_planner_ids',JSON.stringify(pageIds));
     setStatus('노션에 저장됐어요 ✓','success');
   } else {
-    setStatus(apiKey?'노션 저장 실패 (API 키 확인)':'API 키 없이 로컬에만 저장됐어요','error');
+    setStatus(apiKey?'노션 저장 실패 (통합 연결 확인)':'로컬에만 저장됐어요','error');
   }
 }
 
@@ -409,11 +393,7 @@ async function toggleTask(key,idx) {
 document.getElementById('modal-topic').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();if(e.key==='Escape')closeModal();});
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 
-if(apiKey) {
-  document.getElementById('api-setup').classList.add('hidden');
-  setStatus('API 키가 저장되어 있어요. 노션 동기화 버튼을 눌러보세요 😊');
-}
-
+if(apiKey) document.getElementById('api-setup').classList.add('hidden');
 render();
 </script>
 </body>

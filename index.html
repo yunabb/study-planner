@@ -27,6 +27,12 @@
   .stats { display:flex; gap:8px; }
   .stat-pill { background:var(--surface); border:1px solid var(--border); border-radius:100px; padding:5px 14px; font-size:12px; color:var(--muted); font-family:'DM Mono',monospace; }
   .stat-pill strong { color:var(--text); font-weight:500; }
+  .sync-btn { padding:6px 14px; font-size:12px; font-family:'DM Mono',monospace; font-weight:500; border:1.5px solid var(--info); background:none; border-radius:100px; cursor:pointer; color:var(--info); transition:all 0.15s; }
+  .sync-btn:hover { background:var(--info); color:white; }
+  .sync-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .status-bar { font-size:12px; font-family:'DM Mono',monospace; color:var(--muted); margin-bottom:1rem; min-height:20px; }
+  .status-bar.error { color:#DC2626; }
+  .status-bar.success { color:var(--info); }
   /* 주간 */
   .weekly-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
   .day-col { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; min-height:360px; display:flex; flex-direction:column; transition:border-color 0.15s; }
@@ -81,6 +87,13 @@
   .btn-cancel:hover { border-color:var(--text); color:var(--text); }
   .btn-add { background:var(--text); border:1.5px solid var(--text); color:white; }
   .btn-add:hover { background:#333; }
+  /* API 설정 */
+  .api-setup { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.5rem; margin-bottom:1.5rem; }
+  .api-setup h3 { font-size:14px; font-weight:700; margin-bottom:1rem; }
+  .api-row { display:flex; gap:8px; }
+  .api-row input { flex:1; padding:8px 12px; font-size:13px; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); font-family:'DM Mono',monospace; outline:none; }
+  .api-row input:focus { border-color:var(--text); }
+  .api-save-btn { padding:8px 16px; font-size:13px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; border-radius:10px; font-weight:500; background:var(--text); border:none; color:white; }
   .legend { display:flex; gap:16px; margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border); }
   .legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); font-family:'DM Mono',monospace; }
   .legend-dot { width:8px; height:8px; border-radius:50%; }
@@ -108,8 +121,19 @@
         <button class="nav-btn" onclick="changePeriod(1)">&#8594;</button>
       </div>
       <button class="today-btn" onclick="goToday()">오늘</button>
+      <button class="sync-btn" id="sync-btn" onclick="syncFromNotion()">노션 동기화</button>
     </div>
   </div>
+
+  <div class="api-setup" id="api-setup">
+    <h3>🔑 노션 API 키 설정</h3>
+    <div class="api-row">
+      <input type="password" id="api-key-input" placeholder="노션 API 키 입력 (secret_...)" />
+      <button class="api-save-btn" onclick="saveApiKey()">저장</button>
+    </div>
+  </div>
+
+  <div class="status-bar" id="status-bar"></div>
 
   <div id="weekly-view">
     <div class="weekly-grid" id="weekly-grid"></div>
@@ -143,18 +167,117 @@
 </div>
 
 <script>
-const DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'];
-const MONTHS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
-let baseDate=new Date();
-let tasks=JSON.parse(localStorage.getItem('weekly_planner_tasks')||'{}');
-let selectedDay=null;
-let currentView='week';
+const NOTION_DB_ID = 'f66f3af55bd24a1781c8d67d800200d0';
+const PROXY = 'https://api.allorigins.win/raw?url=';
+const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
-function formatDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function formatDateKo(key){const d=new Date(key+'T00:00:00');return(d.getMonth()+1)+'월 '+d.getDate()+'일 (['+'일월화수목금토'[d.getDay()]+'])';}
-function getWeekStart(d){const date=new Date(d);date.setDate(date.getDate()-date.getDay());date.setHours(0,0,0,0);return date;}
+let baseDate = new Date();
+let tasks = JSON.parse(localStorage.getItem('weekly_planner_tasks') || '{}');
+let pageIds = JSON.parse(localStorage.getItem('weekly_planner_ids') || '{}');
+let selectedDay = null;
+let currentView = 'week';
+let apiKey = localStorage.getItem('notion_api_key') || '';
 
-function switchView(view){
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) return;
+  apiKey = key;
+  localStorage.setItem('notion_api_key', key);
+  document.getElementById('api-setup').classList.add('hidden');
+  setStatus('API 키 저장됐어요! 노션 동기화 버튼을 눌러보세요 😊', 'success');
+}
+
+function setStatus(msg, type='') {
+  const el = document.getElementById('status-bar');
+  el.textContent = msg;
+  el.className = 'status-bar' + (type ? ' ' + type : '');
+}
+
+async function notionRequest(method, path, body) {
+  const url = `https://api.notion.com/v1${path}`;
+  const proxyUrl = PROXY + encodeURIComponent(url);
+  const res = await fetch(proxyUrl, {
+    method,
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  return res.json();
+}
+
+async function syncFromNotion() {
+  if (!apiKey) { setStatus('API 키를 먼저 입력해주세요!', 'error'); return; }
+  const btn = document.getElementById('sync-btn');
+  btn.disabled = true;
+  setStatus('노션에서 데이터 불러오는 중...');
+  try {
+    const data = await notionRequest('POST', `/databases/${NOTION_DB_ID}/query`, {
+      sorts: [{ property: '날짜', direction: 'ascending' }]
+    });
+    if (!data.results) throw new Error('데이터를 불러올 수 없어요');
+    tasks = {};
+    pageIds = {};
+    data.results.forEach(page => {
+      const dateVal = page.properties['날짜']?.date?.start;
+      const topic = page.properties['토픽']?.title?.[0]?.plain_text;
+      const cert = page.properties['자격증']?.select?.name;
+      const done = page.properties['완료']?.checkbox;
+      if (!dateVal || !topic) return;
+      const certKey = cert === 'CCNA' ? 'ccna' : 'info';
+      if (!tasks[dateVal]) tasks[dateVal] = [];
+      const idx = tasks[dateVal].length;
+      tasks[dateVal].push({ topic, cert: certKey, done: done || false });
+      if (!pageIds[dateVal]) pageIds[dateVal] = [];
+      pageIds[dateVal][idx] = page.id;
+    });
+    localStorage.setItem('weekly_planner_tasks', JSON.stringify(tasks));
+    localStorage.setItem('weekly_planner_ids', JSON.stringify(pageIds));
+    setStatus('동기화 완료! ✓', 'success');
+    render();
+  } catch(e) {
+    setStatus('동기화 실패: ' + e.message, 'error');
+  }
+  btn.disabled = false;
+}
+
+async function addToNotion(key, topic, cert) {
+  if (!apiKey) return null;
+  try {
+    const certName = cert === 'ccna' ? 'CCNA' : '정보처리산업기사';
+    const data = await notionRequest('POST', '/pages', {
+      parent: { database_id: NOTION_DB_ID },
+      properties: {
+        '토픽': { title: [{ text: { content: topic } }] },
+        '날짜': { date: { start: key } },
+        '자격증': { select: { name: certName } },
+        '완료': { checkbox: false }
+      }
+    });
+    return data.id;
+  } catch(e) {
+    console.error(e);
+    return null;
+  }
+}
+
+async function updateNotion(pageId, done) {
+  if (!apiKey || !pageId) return;
+  try {
+    await notionRequest('PATCH', `/pages/${pageId}`, {
+      properties: { '완료': { checkbox: done } }
+    });
+  } catch(e) { console.error(e); }
+}
+
+function formatDate(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function formatDateKo(key) { const d=new Date(key+'T00:00:00'); return (d.getMonth()+1)+'월 '+d.getDate()+'일 ('+'일월화수목금토'[d.getDay()]+')'; }
+function getWeekStart(d) { const date=new Date(d); date.setDate(date.getDate()-date.getDay()); date.setHours(0,0,0,0); return date; }
+
+function switchView(view) {
   currentView=view;
   document.getElementById('btn-week').classList.toggle('active',view==='week');
   document.getElementById('btn-month').classList.toggle('active',view==='month');
@@ -163,15 +286,15 @@ function switchView(view){
   render();
 }
 
-function goToday(){baseDate=new Date();render();}
+function goToday() { baseDate=new Date(); render(); }
 
-function changePeriod(dir){
+function changePeriod(dir) {
   if(currentView==='week') baseDate.setDate(baseDate.getDate()+dir*7);
   else baseDate.setMonth(baseDate.getMonth()+dir);
   render();
 }
 
-function calcStats(keys){
+function calcStats(keys) {
   let total=0,done=0;
   keys.forEach(k=>{(tasks[k]||[]).forEach(t=>{total++;if(t.done)done++;});});
   document.getElementById('total-count').textContent=total;
@@ -179,11 +302,11 @@ function calcStats(keys){
   document.getElementById('rate').textContent=total?Math.round(done/total*100)+'%':'0%';
 }
 
-function render(){currentView==='week'?renderWeek():renderMonth();}
+function render() { currentView==='week'?renderWeek():renderMonth(); }
 
-function renderWeek(){
+function renderWeek() {
   const ws=getWeekStart(baseDate);
-  const we=new Date(ws);we.setDate(we.getDate()+6);
+  const we=new Date(ws); we.setDate(we.getDate()+6);
   const fmt=d=>(d.getMonth()+1)+'/'+d.getDate();
   document.getElementById('period-label').textContent=fmt(ws)+' — '+fmt(we);
   const today=formatDate(new Date());
@@ -210,7 +333,7 @@ function renderWeek(){
   });
 }
 
-function renderMonth(){
+function renderMonth() {
   const year=baseDate.getFullYear(),month=baseDate.getMonth();
   document.getElementById('period-label').textContent=year+'년 '+MONTHS[month];
   document.getElementById('monthly-header').innerHTML=DAYS.map(d=>`<div class="month-day-header">${d}</div>`).join('');
@@ -240,7 +363,7 @@ function renderMonth(){
   });
 }
 
-function openModal(key){
+function openModal(key) {
   selectedDay=key;
   document.getElementById('modal-topic').value='';
   document.getElementById('modal-day-label').textContent=formatDateKo(key);
@@ -248,26 +371,49 @@ function openModal(key){
   setTimeout(()=>document.getElementById('modal-topic').focus(),100);
 }
 
-function closeModal(){document.getElementById('modal').classList.remove('open');selectedDay=null;}
+function closeModal() { document.getElementById('modal').classList.remove('open'); selectedDay=null; }
 
-function addTask(){
+async function addTask() {
   const topic=document.getElementById('modal-topic').value.trim();
   const cert=document.getElementById('modal-cert').value;
-  if(!topic||!selectedDay)return;
-  if(!tasks[selectedDay])tasks[selectedDay]=[];
+  if(!topic||!selectedDay) return;
+  if(!tasks[selectedDay]) tasks[selectedDay]=[];
   tasks[selectedDay].push({topic,cert,done:false});
   localStorage.setItem('weekly_planner_tasks',JSON.stringify(tasks));
-  closeModal();render();
+  closeModal();
+  render();
+  setStatus('노션에 저장 중...');
+  const pageId=await addToNotion(selectedDay,topic,cert);
+  if(pageId){
+    if(!pageIds[selectedDay]) pageIds[selectedDay]=[];
+    pageIds[selectedDay].push(pageId);
+    localStorage.setItem('weekly_planner_ids',JSON.stringify(pageIds));
+    setStatus('노션에 저장됐어요 ✓','success');
+  } else {
+    setStatus(apiKey?'노션 저장 실패 (API 키 확인)':'API 키 없이 로컬에만 저장됐어요','error');
+  }
 }
 
-function toggleTask(key,idx){
+async function toggleTask(key,idx) {
   tasks[key][idx].done=!tasks[key][idx].done;
   localStorage.setItem('weekly_planner_tasks',JSON.stringify(tasks));
   render();
+  const pageId=pageIds[key]?.[idx];
+  if(pageId){
+    setStatus('노션 업데이트 중...');
+    await updateNotion(pageId,tasks[key][idx].done);
+    setStatus('노션 업데이트 완료 ✓','success');
+  }
 }
 
 document.getElementById('modal-topic').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();if(e.key==='Escape')closeModal();});
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+
+if(apiKey) {
+  document.getElementById('api-setup').classList.add('hidden');
+  setStatus('API 키가 저장되어 있어요. 노션 동기화 버튼을 눌러보세요 😊');
+}
+
 render();
 </script>
 </body>

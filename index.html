@@ -38,7 +38,6 @@
   .api-setup p { font-size:12px; color:var(--muted); margin-bottom:1rem; }
   .api-row { display:flex; gap:8px; }
   .api-row input { flex:1; padding:8px 12px; font-size:13px; border:1px solid var(--border); border-radius:10px; background:var(--bg); color:var(--text); font-family:'DM Mono',monospace; outline:none; }
-  .api-row input:focus { border-color:var(--text); }
   .api-save-btn { padding:8px 16px; font-size:13px; cursor:pointer; border-radius:10px; font-weight:500; background:var(--text); border:none; color:white; }
   .weekly-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:10px; }
   .day-col { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; min-height:360px; display:flex; flex-direction:column; }
@@ -54,6 +53,8 @@
   .task-dot { width:5px; height:5px; border-radius:50%; margin-top:4px; flex-shrink:0; }
   .task-text { flex:1; word-break:break-word; }
   .task-badge { font-size:9px; font-family:'DM Mono',monospace; padding:1px 4px; border-radius:4px; flex-shrink:0; margin-top:1px; }
+  .task-del { font-size:10px; opacity:0.4; cursor:pointer; flex-shrink:0; margin-top:1px; padding:0 2px; }
+  .task-del:hover { opacity:1; }
   .task-ccna { background:var(--ccna-bg); color:var(--ccna-text); }
   .task-ccna .task-dot { background:var(--ccna); }
   .task-ccna .task-badge { background:#DBEAFE; color:var(--ccna-text); }
@@ -237,11 +238,12 @@ async function addToNotion(key, topic, cert) {
   if (!apiKey) return null;
   try {
     const certName = cert === 'ccna' ? 'CCNA' : '정보처리산업기사';
+    const today = new Date().toISOString().split('T')[0];
     const data = await notionRequest('POST', '/pages', {
       parent: { database_id: NOTION_DB_ID },
       properties: {
         '토픽': { title: [{ text: { content: topic } }] },
-        '날짜': { date: { start: key || new Date().toISOString().split('T')[0] } },
+        '날짜': { date: { start: key || today } },
         '자격증': { select: { name: certName } },
         '완료': { checkbox: false }
       }
@@ -256,6 +258,13 @@ async function updateNotion(pageId, done) {
     await notionRequest('PATCH', '/pages/' + pageId, {
       properties: { '완료': { checkbox: done } }
     });
+  } catch(e) { console.error(e); }
+}
+
+async function deleteFromNotion(pageId) {
+  if (!apiKey || !pageId) return;
+  try {
+    await notionRequest('PATCH', '/pages/' + pageId, { archived: true });
   } catch(e) { console.error(e); }
 }
 
@@ -311,7 +320,7 @@ function renderWeek() {
     (tasks[key]||[]).forEach((t,idx)=>{
       const el=document.createElement('div');
       el.className='task task-'+t.cert+(t.done?' done':'');
-      el.innerHTML='<div class="task-dot"></div><div class="task-text">'+t.topic+'</div><div class="task-badge">'+(t.cert==='ccna'?'CC':'정처')+'</div>';
+      el.innerHTML='<div class="task-dot"></div><div class="task-text">'+t.topic+'</div><div class="task-badge">'+(t.cert==='ccna'?'CC':'정처')+'</div><div class="task-del" onclick="event.stopPropagation();deleteTask(\''+key+'\','+idx+')">✕</div>';
       el.onclick=()=>toggleTask(key,idx);
       tasksEl.appendChild(el);
     });
@@ -362,18 +371,18 @@ async function addTask() {
   const topic=document.getElementById('modal-topic').value.trim();
   const cert=document.getElementById('modal-cert').value;
   if(!topic||!selectedDay) return;
-  if(!tasks[selectedDay]) tasks[selectedDay]=[];
-  tasks[selectedDay].push({topic,cert,done:false});
+  const savedDay=selectedDay;
+  const savedTopic=topic;
+  const savedCert=cert;
+  if(!tasks[savedDay]) tasks[savedDay]=[];
+  tasks[savedDay].push({topic:savedTopic,cert:savedCert,done:false});
   localStorage.setItem('weekly_planner_tasks',JSON.stringify(tasks));
-  const savedDay = selectedDay;
-  const savedTopic = topic;
-  const savedCert = cert;
   closeModal(); render();
   setStatus('노션에 저장 중...');
   const pageId=await addToNotion(savedDay,savedTopic,savedCert);
   if(pageId){
-    if(!pageIds[selectedDay]) pageIds[selectedDay]=[];
-    pageIds[selectedDay].push(pageId);
+    if(!pageIds[savedDay]) pageIds[savedDay]=[];
+    pageIds[savedDay].push(pageId);
     localStorage.setItem('weekly_planner_ids',JSON.stringify(pageIds));
     setStatus('노션에 저장됐어요 ✓','success');
   } else {
@@ -383,13 +392,28 @@ async function addTask() {
 
 async function toggleTask(key,idx) {
   tasks[key][idx].done=!tasks[key][idx].done;
+  const done=tasks[key][idx].done;
   localStorage.setItem('weekly_planner_tasks',JSON.stringify(tasks));
   render();
   const pageId=pageIds[key]?.[idx];
   if(pageId){
     setStatus('노션 업데이트 중...');
-    await updateNotion(pageId,tasks[key][idx].done);
+    await updateNotion(pageId,done);
     setStatus('노션 업데이트 완료 ✓','success');
+  }
+}
+
+async function deleteTask(key,idx) {
+  const pageId=pageIds[key]?.[idx];
+  tasks[key].splice(idx,1);
+  if(pageIds[key]) pageIds[key].splice(idx,1);
+  localStorage.setItem('weekly_planner_tasks',JSON.stringify(tasks));
+  localStorage.setItem('weekly_planner_ids',JSON.stringify(pageIds));
+  render();
+  if(pageId && apiKey){
+    setStatus('노션에서 삭제 중...');
+    await deleteFromNotion(pageId);
+    setStatus('삭제 완료 ✓','success');
   }
 }
 

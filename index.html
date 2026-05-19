@@ -365,9 +365,12 @@ async function addTask() {
   if(!tasks[selectedDay]) tasks[selectedDay]=[];
   tasks[selectedDay].push({topic,cert,done:false});
   localStorage.setItem('weekly_planner_tasks',JSON.stringify(tasks));
+  const savedDay = selectedDay;
+  const savedTopic = topic;
+  const savedCert = cert;
   closeModal(); render();
   setStatus('노션에 저장 중...');
-  const pageId=await addToNotion(selectedDay,topic,cert);
+  const pageId=await addToNotion(savedDay,savedTopic,savedCert);
   if(pageId){
     if(!pageIds[selectedDay]) pageIds[selectedDay]=[];
     pageIds[selectedDay].push(pageId);

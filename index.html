@@ -241,7 +241,7 @@ async function addToNotion(key, topic, cert) {
       parent: { database_id: NOTION_DB_ID },
       properties: {
         '토픽': { title: [{ text: { content: topic } }] },
-        '날짜': { date: { start: key } },
+        '날짜': { date: { start: key || new Date().toISOString().split('T')[0] } },
         '자격증': { select: { name: certName } },
         '완료': { checkbox: false }
       }
